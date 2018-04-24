@@ -1,5 +1,8 @@
-let staticCacheName = 'my-site-cache-v1';
-let urlsToCache = [
+let staticCacheName = 'restaurant-static-v1';
+self.addEventListener('install', function(event) {
+    event.waitUntil(
+        caches.open(staticCacheName).then(function(cache) {
+            return cache.addAll([
                     '/',
                     'index.html',
                     'restaurant.html',
@@ -8,41 +11,48 @@ let urlsToCache = [
                     '/js/restaurant_info.js',
                     '/js/main.js',
                     'img/'
-                   ];
-
-self.addEventListener('install', event => {
-    event.waitUntil(caches.open(staticCacheName).then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-    }));
+            ]);
+        })
+    );
 });
-self.addEventListener('fetch', event => {
-    event.respondWith(caches.match(event.request).then(response => {
-        // Cache hit - return response
-        if (response) {
-            return response;
-        }
-        var fetchRequest = event.request.clone();
-        return fetch(fetchRequest).then(response=> {
-            // Check if received a valid response
-            if (!response || response.status !== 200 || response.type !== 'basic') {
+
+self.addEventListener('activate', function(event) {
+    event.waitUntil(
+        caches.keys().then(function(cacheNames) {
+            return Promise.all(
+                cacheNames.filter(function(cacheName) {
+                    return cacheName.startsWith('restaurant-') && cacheName != staticCacheName;
+                }).map(function(cacheName) {
+                    return caches.delete(cacheName);
+                })    
+            );
+        })
+    );
+});
+
+self.addEventListener('fetch', (event) => {
+    // console.log(event.request);
+    event.respondWith(
+        caches.match(event.request).then(response => {
+            if (response) {
+                console.log('Found ', event.request.url, ' in cache');
                 return response;
             }
-            var responseToCache = response.clone();
-            caches.open(staticCacheName).then(cache => {
-                cache.put(event.request, responseToCache);
-            });
-            return response;
-        });
-    }));
-});
-self.addEventListener('activate', event => {
-    var cacheWhitelist = ['my-site-cache-v2'];
-    event.waitUntil(caches.keys().then(cacheNames => {
-        return Promise.all(cacheNames.map(cacheName => {
-            if (cacheWhitelist.indexOf(cacheName) === -1) {
-                return caches.delete(cacheName);
-            }
-        }));
-    }));
+            console.log('Network request for ', event.request.url);
+            return fetch(event.request).then(networkResponse => {
+                if (networkResponse.status === 404) {
+                    console.log(networkResponse.status);
+                    return;
+                }
+                return caches.open(staticCacheName).then(cache => {
+                    cache.put(event.request.url, networkResponse.clone());
+                    console.log('Fetched and cached', event.request.url);
+                    return networkResponse;
+                })
+            })
+        }).catch(error => {
+            console.log('Error:', error);
+            return;
+        })
+    );
 });
