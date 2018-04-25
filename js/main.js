@@ -4,6 +4,15 @@ let restaurants,
 var map;
 var markers = [];
 
+
+(_ => {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', _ => {
+      navigator.serviceWorker.register('/sw.js')
+    });
+  }
+})();
+
 /**
  * Fetch neighborhoods and cuisines as soon as the page is loaded.
  */

@@ -1,6 +1,14 @@
 let restaurant;
 var map;
 
+(_ => {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', _ => {
+      navigator.serviceWorker.register('/sw.js')
+    });
+  }
+})();
+
 /**
  * Initialize Google map, called from HTML.
  */
