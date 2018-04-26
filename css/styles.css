@@ -449,7 +449,6 @@ review-name {
 
     }
 }
-/*Small phones: from 0 to 480px*/
 
 @media only screen and (max-width: 480px) {
     nav h1 a {
@@ -475,12 +474,5 @@ review-name {
     }
     td:first-of-type {
         font-weight: bold;
-    }
-}
-/*Small phones: from 0 to 330px*/
-
-@media only screen and (max-width: 330px) {
-    td {
-        font-size: 85%;
     }
 }
