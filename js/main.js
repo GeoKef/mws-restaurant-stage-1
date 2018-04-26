@@ -4,7 +4,9 @@ let restaurants,
 var map;
 var markers = [];
 
-
+/**
+ * Install Service worker
+ */
 (_ => {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', _ => {
@@ -90,7 +92,6 @@ window.initMap = () => {
     scrollwheel: false
   });
   updateRestaurants();
-
 }
 
 /**
@@ -145,19 +146,53 @@ fillRestaurantsHTML = (restaurants = self.restaurants) => {
 /**
  * Create restaurant HTML.
  */
+getResposiveImgSources = (restaurant) => {
+  const mediaQueries = {
+    '(max-width:700px)': '-380_',
+    '(min-width:701px)': '-512_'
+  };
+  const sources = [];
+
+  for (const key of Object.keys(mediaQueries)) {
+    const filePart = mediaQueries[key];
+    const s = document.createElement('source');
+    const img1x = `/img/${restaurant.id}${filePart}1x.jpg 1x`; 
+    const img2x = `/img/${restaurant.id}${filePart}2x.jpg 2x`; 
+
+    s.setAttribute('media', key);
+    s.setAttribute('srcset', `${img1x},${img2x}`);
+    sources.push(s);
+  }
+
+  const img = document.createElement('img');
+
+  img.src = DBHelper.imageUrlForRestaurant(restaurant);
+  img.setAttribute('alt', restaurant.name);
+  img.className = 'restaurant-img';
+  sources.push(img);
+
+  return sources;
+};
+
 createRestaurantHTML = (restaurant) => {
   const li = document.createElement('li');
 
-  const image = document.createElement('img');
+  const image = document.createElement('picture');
   image.className = 'restaurant-img';
-  image.src = DBHelper.imageUrlForRestaurant(restaurant);
-  image.srcset = DBHelper.imageUrlForRestaurant(restaurant) + " " + "1280w" + ", " + DBHelper.imageUrlForRestaurant_1x(restaurant) + " " + "640w"; // TODO: add srcset
-  image.sizes = '(max-width: 960px) 50vw, 100vw'; // TODO: add sizes
-  image.alt = "The restaurant " + restaurant.name; // TODO: add name for image alt
+  // image.src = DBHelper.imageUrlForRestaurant(restaurant);
+  // image.setAttribute('aria-labelledby', restaurant.name);
+  image.setAttribute('role', 'presentation'); //'img');
+  image.setAttribute('alt', '');
 
+  const sources = getResposiveImgSources(restaurant);
+
+  for (source of sources) {
+    image.append(source);
+  }
+  
   li.append(image);
 
-  const name = document.createElement('h2');
+  const name = document.createElement('h3');
   name.innerHTML = restaurant.name;
   li.append(name);
 
@@ -170,7 +205,6 @@ createRestaurantHTML = (restaurant) => {
   li.append(address);
 
   const more = document.createElement('a');
-  more.setAttribute("aria-label", "View Details"); // TODO: add aria label
   more.innerHTML = 'View Details';
   more.href = DBHelper.urlForRestaurant(restaurant);
   li.append(more)

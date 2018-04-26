@@ -1,6 +1,9 @@
 let restaurant;
 var map;
 
+/**
+ * Install Service worker
+ */
 (_ => {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', _ => {
@@ -56,6 +59,34 @@ fetchRestaurantFromURL = (callback) => {
 /**
  * Create restaurant HTML and add it to the webpage
  */
+getResposiveImgSources = (restaurant) => {
+  const mediaQueries = {
+    '(max-width:700px)': '-380_',
+    '(min-width:701px)': '-512_'
+  };
+  const sources = [];
+
+  for (const key of Object.keys(mediaQueries)) {
+    const filePart = mediaQueries[key];
+    const s = document.createElement('source');
+    const img1x = `/img/${restaurant.id}${filePart}1x.jpg 1x`; 
+    const img2x = `/img/${restaurant.id}${filePart}2x.jpg 2x`; 
+
+    s.setAttribute('media', key);
+    s.setAttribute('srcset', `${img1x},${img2x}`);
+    sources.push(s);
+  }
+
+  const img = document.createElement('img');
+
+  img.src = DBHelper.imageUrlForRestaurant(restaurant);
+  img.setAttribute('alt', restaurant.name);
+  img.className = 'restaurant-img';
+  sources.push(img);
+
+  return sources;
+};
+
 fillRestaurantHTML = (restaurant = self.restaurant) => {
   const name = document.getElementById('restaurant-name');
   name.innerHTML = restaurant.name;
@@ -64,11 +95,17 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
   address.innerHTML = restaurant.address;
 
   const image = document.getElementById('restaurant-img');
-  image.className = 'restaurant-img';
-  image.alt = "The restaurant " + restaurant.name; // TODO: add name for image alt
-  image.src = DBHelper.imageUrlForRestaurant(restaurant);
-  image.srcset = DBHelper.imageUrlForRestaurant(restaurant) + " " + "1280w" + ", " + DBHelper.imageUrlForRestaurant_1x(restaurant) + " " + "640w"; // TODO: add srcset
-  image.sizes = '(max-width: 960px) 50vw, 100vw'; // TODO: add sizes
+  image.className = 'restaurant-img'
+  // image.src = DBHelper.imageUrlForRestaurant(restaurant);
+  image.setAttribute('role', 'presentation'); //'img');
+  image.setAttribute('alt', '');
+
+  const sources = getResposiveImgSources(restaurant);
+
+  for (source of sources) {
+    image.append(source);
+  }
+
   const cuisine = document.getElementById('restaurant-cuisine');
   cuisine.innerHTML = restaurant.cuisine_type;
 
@@ -128,24 +165,19 @@ fillReviewsHTML = (reviews = self.restaurant.reviews) => {
 createReviewHTML = (review) => {
   const li = document.createElement('li');
   const name = document.createElement('p');
-  li.setAttribute("tabIndex", "0");// TODO: add tabindex to li item
   name.innerHTML = review.name;
-  name.className = 'review-name';
   li.appendChild(name);
 
   const date = document.createElement('p');
   date.innerHTML = review.date;
-  date.className= 'review-date';
   li.appendChild(date);
 
   const rating = document.createElement('p');
   rating.innerHTML = `Rating: ${review.rating}`;
-  rating.className ='review-rating';
   li.appendChild(rating);
 
   const comments = document.createElement('p');
   comments.innerHTML = review.comments;
-  comments.className = 'review-comments';
   li.appendChild(comments);
 
   return li;
